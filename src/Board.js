@@ -11,16 +11,18 @@ export default class Board extends React.Component {
     this.state = {
       clients: {
         backlog: clients.filter(client => !client.status || client.status === 'backlog'),
-        inProgress: clients.filter(client => client.status && client.status === 'in-progress'),
-        complete: clients.filter(client => client.status && client.status === 'complete'),
+        inProgress: clients.filter(client => client.status === 'in-progress'),
+        complete: clients.filter(client => client.status === 'complete'),
       }
-    }
+    };
+    // Create refs for the three swimlane containers
     this.swimlanes = {
       backlog: React.createRef(),
       inProgress: React.createRef(),
       complete: React.createRef(),
-    }
+    };
   }
+  
   getClients() {
     return [
       ['1','Stark, White and Abbott','Cloned Optimal Architecture', 'in-progress'],
@@ -50,12 +52,49 @@ export default class Board extends React.Component {
       status: companyDetails[3],
     }));
   }
+  
+  componentDidMount() {
+    // Collect the swimlane container DOM nodes
+    const containers = [
+      this.swimlanes.backlog.current,
+      this.swimlanes.inProgress.current,
+      this.swimlanes.complete.current,
+    ];
+    // Initialize Dragula with these containers
+    this.drake = Dragula(containers);
+    
+    // Handle drop events to update status and color
+    this.drake.on('drop', (el, target) => {
+      let newStatus = '';
+      if (target === this.swimlanes.backlog.current) {
+        newStatus = 'backlog';
+      } else if (target === this.swimlanes.inProgress.current) {
+        newStatus = 'in-progress';
+      } else if (target === this.swimlanes.complete.current) {
+        newStatus = 'complete';
+      }
+      
+      // Update the card's data-status attribute
+      el.dataset.status = newStatus;
+      
+      // Remove existing status classes and add the new one
+      el.classList.remove('Card-grey', 'Card-blue', 'Card-green');
+      if (newStatus === 'backlog') {
+        el.classList.add('Card-grey');
+      } else if (newStatus === 'in-progress') {
+        el.classList.add('Card-blue');
+      } else if (newStatus === 'complete') {
+        el.classList.add('Card-green');
+      }
+    });
+  }
+  
   renderSwimlane(name, clients, ref) {
     return (
-      <Swimlane name={name} clients={clients} dragulaRef={ref}/>
+      <Swimlane name={name} clients={clients} dragulaRef={ref} />
     );
   }
-
+  
   render() {
     return (
       <div className="Board">
